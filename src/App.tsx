@@ -13,7 +13,7 @@ const COPILOTKIT_URL = (import.meta.env.VITE_API_URL ?? "") + "/copilotkit";
 
 function DashboardWithCopilot() {
   return (
-    <CopilotKit runtimeUrl={COPILOTKIT_URL} agent="sdai_assistant">
+    <CopilotKit runtimeUrl={COPILOTKIT_URL}>
       <CopilotSidebar
         defaultOpen={false}
         labels={{
