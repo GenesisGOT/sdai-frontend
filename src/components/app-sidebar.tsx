@@ -138,11 +138,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link to="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-xs">
-                  SD
+                <div className="flex items-center justify-center size-8 shrink-0">
+                  <img src="/sdai-logo-dark.png" alt="SDAI" className="h-6 w-auto object-contain dark:hidden" />
+                  <img src="/sdai-logo-white.png" alt="SDAI" className="h-6 w-auto object-contain hidden dark:block" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">SD AI Solutions</span>
+                  <span className="truncate font-semibold">SDAI Solutions</span>
                   <span className="truncate text-xs text-muted-foreground">Agent Dashboard</span>
                 </div>
               </Link>
