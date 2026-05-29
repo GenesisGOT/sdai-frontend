@@ -11,6 +11,7 @@ import {
   CreditCard,
   BarChart3,
   UserCog,
+  Inbox,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -68,6 +69,11 @@ const navGroups = [
         title: "Client Manager",
         url: "/admin",
         icon: UserCog,
+      },
+      {
+        title: "Replies & Opt-Outs",
+        url: "/admin/replies",
+        icon: Inbox,
       },
     ],
   },
