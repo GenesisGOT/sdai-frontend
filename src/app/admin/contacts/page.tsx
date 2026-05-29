@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import {
   Users, Search, Plus, Upload, RefreshCcw, Phone, Mail,
-  Trash2, Tag, ChevronDown, ChevronUp, Rocket, Loader2,
+  Trash2, Tag, ChevronDown, ChevronUp, Rocket, Loader2, ListChecks, CheckCircle2,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -227,6 +227,85 @@ function RunAgentForContactDialog({ contact, agents, customers, onClose }: {
   )
 }
 
+// ── Enroll in Sequence Dialog ─────────────────────────────────────────────
+function EnrollDialog({ contact, agents, customers, onClose }: {
+  contact: Contact; agents: Agent[]; customers: Customer[]; onClose: () => void
+}) {
+  const clientAgents = (agents as any[]).filter(a => a.customer_id === contact.customer_id)
+  const [agentId, setAgentId] = useState(clientAgents[0]?.id ? String(clientAgents[0].id) : "")
+  const [notes, setNotes] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [result, setResult] = useState<{ ok: boolean; msg: string } | null>(null)
+
+  async function enroll() {
+    if (!agentId) return
+    setSaving(true)
+    try {
+      const data = await apiFetch("/api/v1/enrollments", {
+        method: "POST",
+        body: JSON.stringify({ contact_id: contact.id, agent_id: parseInt(agentId), notes: notes || null, enrolled_by: "admin" }),
+      })
+      const agent = clientAgents.find(a => a.id === parseInt(agentId))
+      setResult({ ok: true, msg: `${contact.name} enrolled in "${agent?.name ?? "agent"}" — ${data.total_steps ?? 1} step sequence scheduled.` })
+    } catch (err: any) {
+      setResult({ ok: false, msg: err?.message === "400" ? "Already enrolled in this sequence." : "Enrollment failed. Try again." })
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open onOpenChange={o => { if (!o) onClose() }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle><ListChecks className="size-4 inline mr-2 text-primary" />Enroll in Sequence</DialogTitle>
+        </DialogHeader>
+        {result ? (
+          <div className={`rounded-xl p-4 border ${result.ok ? "bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800" : "bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800"}`}>
+            <div className="flex items-start gap-2">
+              {result.ok ? <CheckCircle2 className="size-4 text-green-600 mt-0.5 shrink-0" /> : null}
+              <p className="text-sm">{result.msg}</p>
+            </div>
+            <Button className="w-full mt-3" variant="outline" size="sm" onClick={onClose}>Close</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground flex gap-3">
+              {contact.phone && <span><Phone className="size-3 inline mr-1" />{contact.phone}</span>}
+              {contact.email && <span><Mail className="size-3 inline mr-1" />{contact.email}</span>}
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Agent Sequence</label>
+              {clientAgents.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">No active agents for this client account.</p>
+              ) : (
+                <Select value={agentId} onValueChange={setAgentId}>
+                  <SelectTrigger><SelectValue placeholder="Select sequence..." /></SelectTrigger>
+                  <SelectContent>
+                    {clientAgents.map(a => (
+                      <SelectItem key={a.id} value={String(a.id)}>
+                        {a.name} <span className="text-muted-foreground ml-1 text-xs capitalize">({a.channel ?? a.agent_type})</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block">Notes (optional)</label>
+              <Input value={notes} onChange={e => setNotes(e.target.value)} placeholder="e.g. post-service Apr 2026" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
+              <Button size="sm" onClick={enroll} disabled={saving || !agentId || clientAgents.length === 0}>
+                {saving ? <Loader2 className="size-3.5 animate-spin mr-1.5" /> : <ListChecks className="size-3.5 mr-1.5" />}Enroll
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────
 export default function ContactsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -239,6 +318,7 @@ export default function ContactsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [runContact, setRunContact] = useState<Contact | null>(null)
+  const [enrollContact, setEnrollContact] = useState<Contact | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -352,6 +432,9 @@ export default function ContactsPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1">
+                          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setEnrollContact(c)}>
+                            <ListChecks className="size-3 mr-1" />Enroll
+                          </Button>
                           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setRunContact(c)}>
                             <Rocket className="size-3 mr-1" />Run
                           </Button>
@@ -372,6 +455,7 @@ export default function ContactsPage() {
       {showAdd && <AddContactDialog customers={customers} onClose={() => setShowAdd(false)} onAdded={load} />}
       {showImport && <ImportDialog customers={customers} onClose={() => setShowImport(false)} onImported={load} />}
       {runContact && <RunAgentForContactDialog contact={runContact} agents={agents} customers={customers} onClose={() => setRunContact(null)} />}
+      {enrollContact && <EnrollDialog contact={enrollContact} agents={agents} customers={customers} onClose={() => setEnrollContact(null)} />}
     </BaseLayout>
   )
 }
