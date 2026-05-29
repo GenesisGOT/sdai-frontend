@@ -11,6 +11,8 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { CopilotSidebar } from "@copilotkit/react-ui"
+import "@copilotkit/react-ui/styles.css"
 
 interface BaseLayoutProps {
   children: React.ReactNode
@@ -95,11 +97,29 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
       
       {/* Theme Customizer */}
       <ThemeCustomizerTrigger onClick={() => setThemeCustomizerOpen(true)} />
-      <ThemeCustomizer 
-        open={themeCustomizerOpen} 
-        onOpenChange={setThemeCustomizerOpen} 
+      <ThemeCustomizer
+        open={themeCustomizerOpen}
+        onOpenChange={setThemeCustomizerOpen}
       />
       <UpgradeToProButton />
+
+      {/* AI Assistant — floating chat sidebar powered by CopilotKit */}
+      <CopilotSidebar
+        defaultOpen={false}
+        instructions={
+          "You are the SD AI Solutions dashboard assistant. " +
+          "You help business owners understand their AI agent performance, " +
+          "generate outreach messages, troubleshoot campaigns, and get the most " +
+          "out of their automated follow-up agents. " +
+          "Be concise, direct, and use the dashboard data available to you."
+        }
+        labels={{
+          title: "SD AI Assistant",
+          placeholder: "Ask about your agents, campaigns, or messages…",
+          stopGenerating: "Stop",
+          regenerateResponse: "Regenerate",
+        }}
+      />
     </SidebarProvider>
   )
 }
