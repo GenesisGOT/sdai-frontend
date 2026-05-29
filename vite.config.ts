@@ -1,21 +1,17 @@
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
+import path from "path"
+import tailwindcss from "@tailwindcss/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig } from "vite"
 
+// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react()],
-  server: {
-    port: 5173,
-    proxy: {
-      // All traffic (REST + CopilotKit streaming) goes to FastAPI
-      "/api": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-      },
-      "/copilotkit": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        ws: true, // WebSocket / SSE streaming for CopilotKit
-      },
+  plugins: [react(), tailwindcss()],
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
     },
   },
-});
+  define: {
+    'import.meta.env.VITE_BASENAME': JSON.stringify(process.env.VITE_BASENAME || ''),
+  }
+})

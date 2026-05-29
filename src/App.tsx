@@ -1,29 +1,26 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router } from 'react-router-dom'
+import { ThemeProvider } from '@/components/theme-provider'
+import { SidebarConfigProvider } from '@/contexts/sidebar-context'
+import { AppRouter } from '@/components/router/app-router'
+import { AuthProvider } from '@/context/AuthContext'
 
-import { AuthProvider } from "./context/AuthContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { Dashboard } from "./pages/Dashboard";
-import { Login } from "./pages/Login";
-import { Signup } from "./pages/Signup";
+// Get basename from environment (for deployment) or use empty string for development
+const basename = import.meta.env.VITE_BASENAME || ''
 
-export default function App() {
+function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  );
+    <div className="font-sans antialiased" style={{ fontFamily: 'var(--font-inter)' }}>
+      <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+        <AuthProvider>
+          <SidebarConfigProvider>
+            <Router basename={basename}>
+              <AppRouter />
+            </Router>
+          </SidebarConfigProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </div>
+  )
 }
+
+export default App

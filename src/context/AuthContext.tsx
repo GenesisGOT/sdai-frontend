@@ -27,16 +27,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem("sdai_token"));
   const [loading, setLoading] = useState(true);
 
-  // On mount — validate stored token and load user
   useEffect(() => {
     if (!token) { setLoading(false); return; }
     fetch(`${API_BASE}/api/v1/customers/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => {
-        if (!r.ok) throw new Error("Invalid token");
-        return r.json();
-      })
+      .then((r) => { if (!r.ok) throw new Error("Invalid token"); return r.json(); })
       .then((u: User) => setUser(u))
       .catch(() => {
         localStorage.removeItem("sdai_token");
@@ -60,8 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("sdai_token", data.access_token);
     if (data.refresh_token) localStorage.setItem("sdai_refresh_token", data.refresh_token);
     setToken(data.access_token);
-
-    // Load user profile
     const me = await fetch(`${API_BASE}/api/v1/customers/me`, {
       headers: { Authorization: `Bearer ${data.access_token}` },
     }).then((r) => r.json());
@@ -84,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("sdai_token", accessToken);
     if (refreshToken) localStorage.setItem("sdai_refresh_token", refreshToken);
     setToken(accessToken);
-
     const me = await fetch(`${API_BASE}/api/v1/customers/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     }).then((r) => r.json());
