@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useCopilotReadable } from "@copilotkit/react-core"
 import {
   TrendingUp, TrendingDown, Send, CheckCircle, MessageCircle,
   DollarSign, Bot, Zap, Pause, Clock, ArrowRight,
@@ -121,29 +120,6 @@ export default function DashboardPage() {
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [period])
-
-  // Give the AI assistant live context about what this client is seeing
-  useCopilotReadable({
-    description: "Client dashboard — current performance stats",
-    value: {
-      period_days: parseInt(period),
-      messages_sent: data.messages_sent,
-      messages_delivered: data.messages_delivered,
-      delivery_rate: data.delivery_rate,
-      responses_received: data.responses_received,
-      response_rate: data.response_rate,
-      estimated_roi_usd: data.estimated_roi_usd,
-      active_agents: data.agents.filter(a => a.messages_sent > 0).length,
-      total_agents: data.agents.length,
-      agents: data.agents.map(a => ({
-        name: a.agent_name,
-        type: a.agent_type,
-        messages_sent: a.messages_sent,
-        delivery_rate: a.delivery_rate,
-        response_rate: a.response_rate,
-      })),
-    },
-  })
 
   const sparkline = buildSparkline(data.messages_sent, parseInt(period))
   const inboundReplies = data.recent_interactions.filter(i => i.direction === "inbound")
