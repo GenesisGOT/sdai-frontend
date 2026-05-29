@@ -9,7 +9,6 @@ import {
   Settings,
   HelpCircle,
   CreditCard,
-  ShieldCheck,
   BarChart3,
   UserCog,
 } from "lucide-react"
