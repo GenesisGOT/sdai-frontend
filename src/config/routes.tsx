@@ -10,6 +10,7 @@ const AdminReplies = lazy(() => import('@/app/admin/replies/page'))
 const AdminContacts = lazy(() => import('@/app/admin/contacts/page'))
 const AdminInvitations = lazy(() => import('@/app/admin/invitations/page'))
 const AdminAnalytics = lazy(() => import('@/app/admin/analytics/page'))
+const AdminTemplates = lazy(() => import('@/app/admin/templates/page'))
 const Onboarding = lazy(() => import('@/app/onboarding/page'))
 const Dashboard = lazy(() => import('@/app/dashboard/page'))
 const Dashboard2 = lazy(() => import('@/app/dashboard-2/page'))
@@ -94,6 +95,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/admin/analytics",
     element: <ProtectedRoute><AdminAnalytics /></ProtectedRoute>
+  },
+  {
+    path: "/admin/templates",
+    element: <ProtectedRoute><AdminTemplates /></ProtectedRoute>
   },
 
   // Dashboard Routes (protected)

@@ -15,6 +15,7 @@ import {
   UserPlus,
   Contact,
   LineChart,
+  LayoutTemplate,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -77,6 +78,11 @@ const navGroups = [
         title: "Analytics",
         url: "/admin/analytics",
         icon: LineChart,
+      },
+      {
+        title: "Templates",
+        url: "/admin/templates",
+        icon: LayoutTemplate,
       },
       {
         title: "Contacts",
