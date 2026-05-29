@@ -12,6 +12,8 @@ import {
   BarChart3,
   UserCog,
   Inbox,
+  UserPlus,
+  Contact,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -71,9 +73,19 @@ const navGroups = [
         icon: UserCog,
       },
       {
+        title: "Contacts",
+        url: "/admin/contacts",
+        icon: Contact,
+      },
+      {
         title: "Replies & Opt-Outs",
         url: "/admin/replies",
         icon: Inbox,
+      },
+      {
+        title: "Invitations",
+        url: "/admin/invitations",
+        icon: UserPlus,
       },
     ],
   },
