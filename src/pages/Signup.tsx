@@ -7,7 +7,8 @@ export function Signup() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [businessName, setBusinessName] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [contactName, setContactName] = useState("");
   const [phone, setPhone] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,7 @@ export function Signup() {
     setError(null);
     setLoading(true);
     try {
-      await signup(email, password, businessName, phone);
+      await signup(email, password, companyName, contactName, phone);
       navigate("/");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Signup failed");
@@ -40,12 +41,24 @@ export function Signup() {
 
         <form onSubmit={handleSubmit} style={styles.form}>
           <div style={styles.field}>
-            <label style={styles.label}>Business Name</label>
+            <label style={styles.label}>Company Name</label>
             <input
               type="text"
-              value={businessName}
-              onChange={(e) => setBusinessName(e.target.value)}
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
               placeholder="Pacific HVAC"
+              required
+              style={styles.input}
+            />
+          </div>
+
+          <div style={styles.field}>
+            <label style={styles.label}>Your Name</label>
+            <input
+              type="text"
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
+              placeholder="Jane Smith"
               required
               style={styles.input}
             />

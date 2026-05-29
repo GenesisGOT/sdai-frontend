@@ -5,15 +5,17 @@ const API_BASE = import.meta.env.VITE_API_URL ?? "";
 interface User {
   id: number;
   email: string;
-  business_name: string;
-  plan_tier: string;
+  company_name: string;
+  contact_name: string;
+  phone: string | null;
+  is_active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, businessName: string, phone: string) => Promise<void>;
+  signup: (email: string, password: string, companyName: string, contactName: string, phone: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -66,23 +68,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(me);
   };
 
-  const signup = async (email: string, password: string, businessName: string, phone: string) => {
+  const signup = async (email: string, password: string, companyName: string, contactName: string, phone: string) => {
     const resp = await fetch(`${API_BASE}/api/v1/auth/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, business_name: businessName, phone }),
+      body: JSON.stringify({ email, password, company_name: companyName, contact_name: contactName, phone }),
     });
     if (!resp.ok) {
       const err = await resp.json().catch(() => ({}));
       throw new Error(err.detail ?? "Signup failed");
     }
     const data = await resp.json();
-    localStorage.setItem("sdai_token", data.access_token);
-    if (data.refresh_token) localStorage.setItem("sdai_refresh_token", data.refresh_token);
-    setToken(data.access_token);
+    const accessToken = data.token?.access_token ?? data.access_token;
+    const refreshToken = data.token?.refresh_token ?? data.refresh_token;
+    localStorage.setItem("sdai_token", accessToken);
+    if (refreshToken) localStorage.setItem("sdai_refresh_token", refreshToken);
+    setToken(accessToken);
 
     const me = await fetch(`${API_BASE}/api/v1/customers/me`, {
-      headers: { Authorization: `Bearer ${data.access_token}` },
+      headers: { Authorization: `Bearer ${accessToken}` },
     }).then((r) => r.json());
     setUser(me);
   };
