@@ -5,6 +5,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 // Lazy load components for better performance
 const Landing = lazy(() => import('@/app/landing/page'))
 const Admin = lazy(() => import('@/app/admin/page'))
+const AdminClientDetail = lazy(() => import('@/app/admin/clients/page'))
 const Onboarding = lazy(() => import('@/app/onboarding/page'))
 const Dashboard = lazy(() => import('@/app/dashboard/page'))
 const Dashboard2 = lazy(() => import('@/app/dashboard-2/page'))
@@ -69,6 +70,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/admin",
     element: <ProtectedRoute><Admin /></ProtectedRoute>
+  },
+  {
+    path: "/admin/clients/:id",
+    element: <ProtectedRoute><AdminClientDetail /></ProtectedRoute>
   },
 
   // Dashboard Routes (protected)
