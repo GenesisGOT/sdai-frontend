@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import {
   Users, Search, Plus, Upload, RefreshCcw, Phone, Mail,
-  Trash2, Tag, ChevronDown, ChevronUp, Rocket, Loader2, ListChecks, CheckCircle2,
+  Trash2, Rocket, Loader2, ListChecks, CheckCircle2,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -30,7 +30,7 @@ interface Contact {
   is_active: boolean; created_at: string
 }
 interface Customer { id: number; company_name: string; email: string }
-interface Agent { id: number; name: string; channel: string | null; agent_type: string }
+interface Agent { id: number; name: string; channel: string | null; agent_type: string; customer_id: number }
 interface Stats { total: number; active: number; with_phone: number; with_email: number }
 
 // ── Add Contact Dialog ────────────────────────────────────────────────────
