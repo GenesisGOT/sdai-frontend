@@ -4,6 +4,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 
 // Lazy load components for better performance
 const Landing = lazy(() => import('@/app/landing/page'))
+const Admin = lazy(() => import('@/app/admin/page'))
+const Onboarding = lazy(() => import('@/app/onboarding/page'))
 const Dashboard = lazy(() => import('@/app/dashboard/page'))
 const Dashboard2 = lazy(() => import('@/app/dashboard-2/page'))
 const Mail = lazy(() => import('@/app/mail/page'))
@@ -53,10 +55,20 @@ export const routes: RouteConfig[] = [
     element: <Navigate to="/dashboard" replace />
   },
 
-  // Landing Page (public)
+  // Public pages (no auth required)
   {
     path: "/landing",
     element: <Landing />
+  },
+  {
+    path: "/onboarding",
+    element: <Onboarding />
+  },
+
+  // Admin (protected)
+  {
+    path: "/admin",
+    element: <ProtectedRoute><Admin /></ProtectedRoute>
   },
 
   // Dashboard Routes (protected)
