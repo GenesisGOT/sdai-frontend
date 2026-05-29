@@ -8,7 +8,6 @@
  *   "which agent is performing best?"
  */
 
-import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { useEffect, useState } from "react";
 
 // ---------------------------------------------------------------------------
@@ -86,69 +85,6 @@ export function Dashboard() {
       .then((d: DashboardData) => { setData(d); setLoading(false); })
       .catch((e) => { setError(e.message); setLoading(false); });
   }, [period]);
-
-  // Give the AI sidebar full dashboard context so it can answer performance questions
-  useCopilotReadable({
-    description: `Customer's SD AI agent performance stats for the last ${period} days`,
-    value: {
-      messages_sent: data.messages_sent,
-      delivery_rate: `${data.delivery_rate}%`,
-      response_rate: `${data.response_rate}%`,
-      estimated_roi: `$${data.estimated_roi_usd}`,
-      agents: data.agents.map((a) => ({
-        name: a.agent_name,
-        type: a.agent_type,
-        sent: a.messages_sent,
-        response_rate: `${a.response_rate}%`,
-      })),
-    },
-  });
-
-  useCopilotReadable({
-    description: "Recent interactions / messages timeline",
-    value: data.recent_interactions.slice(0, 5),
-  });
-
-  // Let the AI sidebar trigger message generation on behalf of the customer
-  useCopilotAction({
-    name: "generateMessage",
-    description:
-      "Generate a personalized outreach message using one of the SD AI agent types",
-    parameters: [
-      { name: "agentType", type: "string", description: "confirmation | win_back | quote_follow_up | etc." },
-      { name: "contactName", type: "string", description: "Customer contact name" },
-      { name: "businessName", type: "string", description: "Business name" },
-      { name: "channel", type: "string", description: "sms or email" },
-      { name: "extra", type: "string", description: "Any extra context (appointment time, invoice amount, etc.)" },
-    ],
-    handler: async ({ agentType, contactName, businessName, channel, extra }) => {
-      const token = localStorage.getItem("sdai_token");
-      if (!token) return "Error: not authenticated";
-
-      // Find first matching agent for this type
-      const agent = data.agents.find((a) => a.agent_type === agentType);
-      if (!agent) return `No ${agentType} agent found. Create one first.`;
-
-      const resp = await fetch(`${API_BASE}/api/v1/ai-agents/generate`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          agent_id: agent.agent_id,
-          contact_name: contactName,
-          business_name: businessName,
-          channel,
-          extra: extra ?? "",
-        }),
-      });
-
-      if (!resp.ok) return `Generation failed: HTTP ${resp.status}`;
-      const result = await resp.json();
-      return result.message;
-    },
-  });
 
   // ---------------------------------------------------------------------------
   // Render
