@@ -14,6 +14,7 @@ import {
   Inbox,
   UserPlus,
   Contact,
+  LineChart,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -71,6 +72,11 @@ const navGroups = [
         title: "Client Manager",
         url: "/admin",
         icon: UserCog,
+      },
+      {
+        title: "Analytics",
+        url: "/admin/analytics",
+        icon: LineChart,
       },
       {
         title: "Contacts",

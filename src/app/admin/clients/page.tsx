@@ -4,7 +4,7 @@ import {
   ArrowLeft, Bot, CheckCircle2, Clock, FileText,
   Play, Pause, Trash2, Zap, Phone, Mail, Building2,
   Rocket, RefreshCcw, Link2, ChevronDown, ChevronUp,
-  Loader2, TerminalSquare, XCircle,
+  Loader2, TerminalSquare, XCircle, Settings2, Plus, Minus,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ""
@@ -53,6 +55,125 @@ const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = 
   running: { icon: <Loader2 className="size-3.5 animate-spin" />, color: "text-blue-500" },
   pending: { icon: <Clock className="size-3.5" />, color: "text-yellow-500" },
   skipped: { icon: <FileText className="size-3.5" />, color: "text-muted-foreground" },
+}
+
+// ── Agent Config Editor ───────────────────────────────────────────────────
+interface MsgTemplate { text: string; subject: string; delay_days: number }
+
+function ConfigEditorDialog({ agent, onClose, onSaved }: {
+  agent: Agent; onClose: () => void; onSaved: (a: Agent) => void
+}) {
+  // Derive initial templates from agent.config
+  const initial: MsgTemplate[] = (() => {
+    const raw = (agent as any).config
+    if (!raw) return [{ text: "", subject: "", delay_days: 0 }]
+    if (Array.isArray(raw.message_templates)) return raw.message_templates.map((t: any) => ({
+      text: t.text ?? t.body ?? "",
+      subject: t.subject ?? "",
+      delay_days: t.delay_days ?? 0,
+    }))
+    return [{ text: "", subject: "", delay_days: 0 }]
+  })()
+
+  const [templates, setTemplates] = useState<MsgTemplate[]>(initial)
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
+
+  function update(idx: number, key: keyof MsgTemplate, val: string | number) {
+    setTemplates(prev => prev.map((t, i) => i === idx ? { ...t, [key]: val } : t))
+  }
+  function addStep() { setTemplates(p => [...p, { text: "", subject: "", delay_days: 0 }]) }
+  function removeStep(idx: number) { setTemplates(p => p.filter((_, i) => i !== idx)) }
+
+  async function save() {
+    setSaving(true)
+    try {
+      const body = { message_templates: templates }
+      const r = await fetch(`${API_BASE}/api/v1/admin/agents/${agent.id}/config`, {
+        method: "PATCH",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      })
+      if (!r.ok) throw new Error(`${r.status}`)
+      const updated = await r.json()
+      setSaved(true)
+      setTimeout(() => { onSaved(updated); onClose() }, 800)
+    } catch { /* noop */ } finally { setSaving(false) }
+  }
+
+  return (
+    <Dialog open onOpenChange={o => { if (!o) onClose() }}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Settings2 className="size-4 text-primary" />Configure: {agent.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Edit the message sequence for this agent. Each step is sent at a different delay. Claude personalises the text at send time using these as templates.
+          </p>
+
+          {templates.map((t, idx) => (
+            <div key={idx} className="border rounded-xl p-4 space-y-3 relative">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Step {idx + 1}</span>
+                {templates.length > 1 && (
+                  <Button variant="ghost" size="icon" className="size-6 text-destructive" onClick={() => removeStep(idx)}>
+                    <Minus className="size-3" />
+                  </Button>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Label className="text-xs mb-1 block">Email Subject (optional)</Label>
+                  <Input value={t.subject} onChange={e => update(idx, "subject", e.target.value)} placeholder="e.g. We miss you at {business_name}" />
+                </div>
+                <div>
+                  <Label className="text-xs mb-1 block">Delay (days after prev)</Label>
+                  <Input
+                    type="number" min={0} max={365}
+                    value={t.delay_days}
+                    onChange={e => update(idx, "delay_days", parseInt(e.target.value) || 0)}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block">Message Template</Label>
+                <Textarea
+                  value={t.text}
+                  onChange={e => update(idx, "text", e.target.value)}
+                  rows={4}
+                  placeholder="Hi {contact_name}, just following up from {business_name}…&#10;&#10;Use {placeholders} for personalisation — Claude will fill in the rest."
+                  className="text-sm font-mono resize-none"
+                />
+              </div>
+            </div>
+          ))}
+
+          <Button variant="outline" size="sm" onClick={addStep} className="w-full border-dashed">
+            <Plus className="size-3.5 mr-1.5" />Add Step
+          </Button>
+
+          <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+            Available placeholders: <code className="bg-background px-1 rounded">{"{contact_name}"}</code>{" "}
+            <code className="bg-background px-1 rounded">{"{business_name}"}</code>{" "}
+            <code className="bg-background px-1 rounded">{"{business_type}"}</code>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button onClick={save} disabled={saving || saved}>
+            {saving ? <><Loader2 className="size-3.5 mr-1.5 animate-spin" />Saving…</> :
+             saved ? <><CheckCircle2 className="size-3.5 mr-1.5 text-green-500" />Saved!</> :
+             <><Settings2 className="size-3.5 mr-1.5" />Save Config</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 // ── Run Agent Dialog ──────────────────────────────────────────────────────
@@ -232,6 +353,7 @@ export default function ClientDetailPage() {
   const [executions, setExecutions] = useState<Execution[]>([])
   const [loading, setLoading] = useState(true)
   const [runAgent, setRunAgent] = useState<Agent | null>(null)
+  const [configAgent, setConfigAgent] = useState<Agent | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -370,6 +492,10 @@ export default function ClientDetailPage() {
                                 onClick={() => setRunAgent(a)}>
                                 <Rocket className="size-3 mr-1" />Run
                               </Button>
+                              <Button variant="ghost" size="icon" className="size-7" title="Configure"
+                                onClick={() => setConfigAgent(a)}>
+                                <Settings2 className="size-3.5" />
+                              </Button>
                               <Button variant="ghost" size="icon" className="size-7"
                                 onClick={() => toggleStatus(a)} title={a.status === "active" ? "Pause" : "Activate"}>
                                 {a.status === "active" ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
@@ -458,6 +584,18 @@ export default function ClientDetailPage() {
           customer={customer}
           onClose={() => setRunAgent(null)}
           onRan={() => { setRunAgent(null); load() }}
+        />
+      )}
+
+      {/* Config Editor Modal */}
+      {configAgent && (
+        <ConfigEditorDialog
+          agent={configAgent}
+          onClose={() => setConfigAgent(null)}
+          onSaved={updated => {
+            setAgents(prev => prev.map(a => a.id === updated.id ? updated : a))
+            setConfigAgent(null)
+          }}
         />
       )}
     </BaseLayout>
