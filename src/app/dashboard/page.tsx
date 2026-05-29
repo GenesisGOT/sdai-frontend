@@ -146,7 +146,6 @@ export default function DashboardPage() {
   })
 
   const sparkline = buildSparkline(data.messages_sent, parseInt(period))
-  const activeAgents = data.agents.filter(a => a.messages_sent > 0)
   const inboundReplies = data.recent_interactions.filter(i => i.direction === "inbound")
 
   return (
@@ -233,7 +232,7 @@ export default function DashboardPage() {
                   <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                   <Tooltip
                     contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))", background: "hsl(var(--background))" }}
-                    formatter={(v: number) => [v, "Messages"]}
+                    formatter={(v: number | undefined) => [v ?? 0, "Messages"]}
                     labelFormatter={(l) => `Day ${l}`}
                   />
                   <Area type="monotone" dataKey="sent" stroke="hsl(var(--primary))" fill="url(#grad1)" strokeWidth={2} dot={false} />

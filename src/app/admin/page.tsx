@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Plus, RefreshCcw, Users, Bot, Activity, LayoutTemplate,
-  Search, ChevronRight, Play, Pause, Trash2, Settings2,
-  Rocket, X, CheckCircle2, Clock, FileText, Zap, BarChart3,
+  RefreshCcw, Users, Bot, LayoutTemplate,
+  Search, ChevronRight, Play, Pause, Trash2,
+  Rocket, CheckCircle2, Clock, FileText,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ""

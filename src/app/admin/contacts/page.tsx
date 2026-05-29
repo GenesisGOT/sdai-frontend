@@ -228,8 +228,8 @@ function RunAgentForContactDialog({ contact, agents, customers, onClose }: {
 }
 
 // ── Enroll in Sequence Dialog ─────────────────────────────────────────────
-function EnrollDialog({ contact, agents, customers, onClose }: {
-  contact: Contact; agents: Agent[]; customers: Customer[]; onClose: () => void
+function EnrollDialog({ contact, agents, onClose }: {
+  contact: Contact; agents: Agent[]; customers?: Customer[]; onClose: () => void
 }) {
   const clientAgents = (agents as any[]).filter(a => a.customer_id === contact.customer_id)
   const [agentId, setAgentId] = useState(clientAgents[0]?.id ? String(clientAgents[0].id) : "")

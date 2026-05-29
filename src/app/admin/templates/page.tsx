@@ -1,10 +1,9 @@
 import { useEffect, useState, useCallback } from "react"
 import {
   LayoutTemplate, Search, Rocket, CheckCircle2, Loader2,
-  MessageSquare, Mail, Zap, Tag, ListChecks, RefreshCcw,
+  MessageSquare, Mail, Zap, ListChecks, RefreshCcw,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"

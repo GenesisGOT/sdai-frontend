@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import {
   MessageSquare, Search, RefreshCcw, Phone, Mail,
-  Ban, CheckCircle2, Trash2, AlertTriangle,
+  Ban, CheckCircle2, AlertTriangle,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
