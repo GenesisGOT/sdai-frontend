@@ -13,14 +13,10 @@ const AdminAnalytics = lazy(() => import('@/app/admin/analytics/page'))
 const AdminTemplates = lazy(() => import('@/app/admin/templates/page'))
 const Onboarding = lazy(() => import('@/app/onboarding/page'))
 const Dashboard = lazy(() => import('@/app/dashboard/page'))
-const Dashboard2 = lazy(() => import('@/app/dashboard-2/page'))
-const Mail = lazy(() => import('@/app/mail/page'))
-const Tasks = lazy(() => import('@/app/tasks/page'))
-const Chat = lazy(() => import('@/app/chat/page'))
-const Calendar = lazy(() => import('@/app/calendar/page'))
+const Analytics = lazy(() => import('@/app/analytics/page'))
+const Enrollments = lazy(() => import('@/app/enrollments/page'))
+const RepliesInbox = lazy(() => import('@/app/replies-inbox/page'))
 const Users = lazy(() => import('@/app/users/page'))
-const FAQs = lazy(() => import('@/app/faqs/page'))
-const Pricing = lazy(() => import('@/app/pricing/page'))
 
 // Auth pages
 const SignIn = lazy(() => import('@/app/auth/sign-in/page'))
@@ -107,40 +103,24 @@ export const routes: RouteConfig[] = [
     element: <ProtectedRoute><Dashboard /></ProtectedRoute>
   },
   {
-    path: "/dashboard-2",
-    element: <ProtectedRoute><Dashboard2 /></ProtectedRoute>
-  },
-
-  // Application Routes (protected)
-  {
-    path: "/mail",
-    element: <ProtectedRoute><Mail /></ProtectedRoute>
+    path: "/analytics",
+    element: <ProtectedRoute><Analytics /></ProtectedRoute>
   },
   {
-    path: "/tasks",
-    element: <ProtectedRoute><Tasks /></ProtectedRoute>
+    path: "/enrollments",
+    element: <ProtectedRoute><Enrollments /></ProtectedRoute>
   },
   {
-    path: "/chat",
-    element: <ProtectedRoute><Chat /></ProtectedRoute>
+    path: "/inbox",
+    element: <ProtectedRoute><RepliesInbox /></ProtectedRoute>
   },
   {
-    path: "/calendar",
-    element: <ProtectedRoute><Calendar /></ProtectedRoute>
-  },
-
-  // Content Pages (protected)
-  {
-    path: "/users",
+    path: "/contacts",
     element: <ProtectedRoute><Users /></ProtectedRoute>
   },
   {
-    path: "/faqs",
-    element: <ProtectedRoute><FAQs /></ProtectedRoute>
-  },
-  {
-    path: "/pricing",
-    element: <ProtectedRoute><Pricing /></ProtectedRoute>
+    path: "/users",
+    element: <Navigate to="/contacts" replace />
   },
 
   // Authentication Routes
