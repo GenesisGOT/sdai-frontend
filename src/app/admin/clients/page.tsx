@@ -3,13 +3,17 @@ import { useParams, useNavigate } from "react-router-dom"
 import {
   ArrowLeft, Bot, CheckCircle2, Clock, FileText,
   Play, Pause, Trash2, Zap, Phone, Mail, Building2,
-  Rocket, RefreshCcw, Link2,
+  Rocket, RefreshCcw, Link2, ChevronDown, ChevronUp,
+  Loader2, TerminalSquare, XCircle,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ""
 
@@ -17,56 +21,217 @@ function authHeaders() {
   const token = localStorage.getItem("sdai_token")
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }
 }
-
 async function apiFetch(path: string, opts?: RequestInit) {
   const r = await fetch(`${API_BASE}${path}`, { ...opts, headers: { ...authHeaders(), ...(opts?.headers ?? {}) } })
   if (!r.ok) throw new Error(`${r.status}`)
   return r.json()
 }
 
-interface Customer {
-  id: number; email: string; company_name: string; contact_name: string
-  phone: string | null; is_active: boolean; created_at?: string
-}
-interface Agent {
-  id: number; customer_id: number; name: string; agent_type: string
-  status: string; description: string | null; channel: string | null
-  trigger_type: string | null; deployed_by: string | null; created_at: string
-}
-interface Integration {
-  id: number; provider: string; is_active: boolean; created_at: string; updated_at: string
-}
+interface Customer { id: number; email: string; company_name: string; contact_name: string; phone: string | null; is_active: boolean }
+interface Agent { id: number; customer_id: number; name: string; agent_type: string; status: string; description: string | null; channel: string | null; trigger_type: string | null; deployed_by: string | null; created_at: string }
+interface Integration { id: number; provider: string; is_active: boolean; created_at: string }
+interface Execution { id: number; agent_id: number; trigger: string; contact_name: string | null; channel: string | null; message_sent: string | null; status: string; error_message: string | null; started_at: string; finished_at: string | null; tokens_used?: { input_tokens: number; output_tokens: number } }
 
 const CHANNEL_COLORS: Record<string, string> = {
   sms: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   email: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
   both: "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200",
   voice: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
-  webchat: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-200",
-  whatsapp: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200",
 }
 const CATEGORY_LABELS: Record<string, string> = {
   follow_up: "Follow-Up", win_back: "Win-Back", appointment: "Appointment",
   review: "Review", lead_gen: "Lead Gen", sales_upsell: "Sales & Upsell",
   support: "Support", onboarding: "Onboarding", industry: "Industry",
 }
-const STATUS_ICONS: Record<string, React.ReactNode> = {
-  active: <CheckCircle2 className="size-3.5 text-green-500" />,
-  paused: <Clock className="size-3.5 text-yellow-500" />,
-  draft: <FileText className="size-3.5 text-muted-foreground" />,
-}
 const PROVIDER_LABELS: Record<string, string> = {
   zapier: "Zapier", twilio: "Twilio", sendgrid: "SendGrid", salesforce: "Salesforce",
-  hubspot: "HubSpot", stripe: "Stripe", google_calendar: "Google Calendar",
+  hubspot: "HubSpot", stripe: "Stripe",
+}
+const STATUS_CONFIG: Record<string, { icon: React.ReactNode; color: string }> = {
+  success: { icon: <CheckCircle2 className="size-3.5" />, color: "text-green-600" },
+  failed: { icon: <XCircle className="size-3.5" />, color: "text-red-500" },
+  running: { icon: <Loader2 className="size-3.5 animate-spin" />, color: "text-blue-500" },
+  pending: { icon: <Clock className="size-3.5" />, color: "text-yellow-500" },
+  skipped: { icon: <FileText className="size-3.5" />, color: "text-muted-foreground" },
 }
 
+// ── Run Agent Dialog ──────────────────────────────────────────────────────
+function RunAgentDialog({ agent, customer, onClose, onRan }: {
+  agent: Agent; customer: Customer; onClose: () => void; onRan: () => void
+}) {
+  const [contactName, setContactName] = useState(customer.contact_name)
+  const [contactPhone, setContactPhone] = useState(customer.phone ?? "")
+  const [contactEmail, setContactEmail] = useState(customer.email)
+  const [businessName, setBusinessName] = useState(customer.company_name)
+  const [businessType, setBusinessType] = useState("local business")
+  const [step, setStep] = useState("0")
+  const [running, setRunning] = useState(false)
+  const [result, setResult] = useState<{ status: string; message?: string; error?: string } | null>(null)
+
+  async function handleRun() {
+    setRunning(true); setResult(null)
+    try {
+      const data = await apiFetch("/api/v1/executions/run", {
+        method: "POST",
+        body: JSON.stringify({
+          agent_id: agent.id,
+          contact_name: contactName,
+          contact_phone: contactPhone || null,
+          contact_email: contactEmail || null,
+          business_name: businessName,
+          business_type: businessType,
+          step: parseInt(step),
+        }),
+      })
+      setResult({ status: data.status, message: data.message_sent, error: data.error })
+      if (data.status === "success") onRan()
+    } catch (e) {
+      setResult({ status: "error", error: "Request failed" })
+    } finally {
+      setRunning(false)
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Rocket className="size-4 text-primary" />Run: {agent.name}
+          </DialogTitle>
+        </DialogHeader>
+
+        {result ? (
+          <div className={`rounded-xl p-4 ${result.status === "success" ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800" : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"}`}>
+            <div className="flex items-center gap-2 font-medium mb-2">
+              {result.status === "success" ? <CheckCircle2 className="size-4 text-green-600" /> : <XCircle className="size-4 text-red-500" />}
+              {result.status === "success" ? "Agent ran successfully!" : "Run failed"}
+            </div>
+            {result.message && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground mb-1">Message sent:</p>
+                <p className="text-sm italic bg-background rounded p-2 border">"{result.message}"</p>
+              </div>
+            )}
+            {result.error && <p className="text-sm text-red-600 mt-1">{result.error}</p>}
+            <Button className="w-full mt-4" variant="outline" onClick={onClose}>Close</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Contact Name</label>
+                <Input value={contactName} onChange={e => setContactName(e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Business Name</label>
+                <Input value={businessName} onChange={e => setBusinessName(e.target.value)} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Phone (for SMS)</label>
+                <Input value={contactPhone} onChange={e => setContactPhone(e.target.value)} placeholder="+1 619..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Email</label>
+                <Input value={contactEmail} onChange={e => setContactEmail(e.target.value)} type="email" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block">Business Type</label>
+                <Input value={businessType} onChange={e => setBusinessType(e.target.value)} placeholder="hvac, dental..." />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block">Message Step</label>
+                <Select value={step} onValueChange={setStep}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[0, 1, 2, 3, 4].map(s => <SelectItem key={s} value={String(s)}>Step {s + 1}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
+              Claude will personalise the message using the template and contact info above.
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={onClose}>Cancel</Button>
+              <Button onClick={handleRun} disabled={running || !contactName || !businessName}>
+                {running ? <><Loader2 className="size-3.5 mr-1.5 animate-spin" />Running...</> : <><Rocket className="size-3.5 mr-1.5" />Run Agent</>}
+              </Button>
+            </DialogFooter>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+// ── Execution Log Row ─────────────────────────────────────────────────────
+function ExecutionRow({ exec }: { exec: Execution }) {
+  const [expanded, setExpanded] = useState(false)
+  const cfg = STATUS_CONFIG[exec.status] ?? STATUS_CONFIG.pending
+
+  return (
+    <>
+      <tr
+        className="hover:bg-muted/30 transition-colors cursor-pointer"
+        onClick={() => setExpanded(p => !p)}
+      >
+        <td className="px-4 py-3">
+          <div className={`flex items-center gap-1.5 ${cfg.color}`}>
+            {cfg.icon}<span className="capitalize text-sm">{exec.status}</span>
+          </div>
+        </td>
+        <td className="px-4 py-3 text-sm">{exec.contact_name ?? "—"}</td>
+        <td className="px-4 py-3">
+          {exec.channel && (
+            <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${CHANNEL_COLORS[exec.channel] ?? "bg-gray-100 text-gray-700"}`}>
+              {exec.channel}
+            </span>
+          )}
+        </td>
+        <td className="px-4 py-3 text-xs text-muted-foreground capitalize">{exec.trigger}</td>
+        <td className="px-4 py-3 text-xs text-muted-foreground">
+          {new Date(exec.started_at).toLocaleString()}
+        </td>
+        <td className="px-4 py-3">
+          {expanded ? <ChevronUp className="size-4 text-muted-foreground" /> : <ChevronDown className="size-4 text-muted-foreground" />}
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-muted/20">
+          <td colSpan={6} className="px-4 py-3">
+            {exec.message_sent && (
+              <div className="mb-2">
+                <p className="text-xs font-medium text-muted-foreground mb-1">Message sent:</p>
+                <p className="text-sm bg-background rounded-lg p-3 border italic">"{exec.message_sent}"</p>
+              </div>
+            )}
+            {exec.error_message && (
+              <div className="text-sm text-destructive bg-destructive/10 rounded-lg p-3">
+                Error: {exec.error_message}
+              </div>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────
 export default function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [agents, setAgents] = useState<Agent[]>([])
   const [integrations, setIntegrations] = useState<Integration[]>([])
+  const [executions, setExecutions] = useState<Execution[]>([])
   const [loading, setLoading] = useState(true)
+  const [runAgent, setRunAgent] = useState<Agent | null>(null)
 
   const load = useCallback(async () => {
     if (!id) return
@@ -78,6 +243,11 @@ export default function ClientDetailPage() {
         apiFetch(`/api/v1/admin/customers/${id}/integrations`),
       ])
       setCustomer(c); setAgents(a); setIntegrations(i)
+      // Load executions for all agents
+      if (a.length > 0) {
+        const execs = await apiFetch(`/api/v1/executions?customer_id=${id}&limit=30`)
+        setExecutions(execs)
+      }
     } catch { /* noop */ }
     finally { setLoading(false) }
   }, [id])
@@ -107,8 +277,6 @@ export default function ClientDetailPage() {
   return (
     <BaseLayout>
       <div className="px-4 lg:px-6 space-y-6">
-
-        {/* Back */}
         <Button variant="ghost" size="sm" onClick={() => navigate("/admin")} className="-ml-1">
           <ArrowLeft className="size-3.5 mr-1.5" />Back to Admin
         </Button>
@@ -117,97 +285,65 @@ export default function ClientDetailPage() {
           <div className="space-y-4">
             <Skeleton className="h-10 w-64" />
             <div className="grid sm:grid-cols-2 gap-4">
-              <Skeleton className="h-40 rounded-xl" />
-              <Skeleton className="h-40 rounded-xl" />
+              <Skeleton className="h-40 rounded-xl" /><Skeleton className="h-40 rounded-xl" />
             </div>
           </div>
         ) : !customer ? (
-          <div className="text-center py-20">
-            <p className="text-muted-foreground">Client not found.</p>
-          </div>
+          <div className="text-center py-20"><p className="text-muted-foreground">Client not found.</p></div>
         ) : (
           <>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
-                    <Building2 className="size-6 text-primary" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold">{customer.company_name}</h1>
-                    <p className="text-muted-foreground">{customer.contact_name}</p>
-                  </div>
+              <div className="flex items-center gap-3">
+                <div className="size-12 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Building2 className="size-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">{customer.company_name}</h1>
+                  <p className="text-muted-foreground">{customer.contact_name}</p>
                 </div>
               </div>
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={load}>
-                  <RefreshCcw className="size-3.5 mr-1.5" />Refresh
-                </Button>
-                <Button size="sm" onClick={() => navigate("/admin")}>
-                  <Rocket className="size-3.5 mr-1.5" />Deploy Agent
-                </Button>
-              </div>
+              <Button variant="outline" size="sm" onClick={load}>
+                <RefreshCcw className="size-3.5 mr-1.5" />Refresh
+              </Button>
             </div>
 
-            {/* Info + Stats */}
+            {/* Stats */}
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <CardHeader className="pb-2"><CardDescription>Email</CardDescription></CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Mail className="size-4 text-muted-foreground" />
-                    <span className="truncate">{customer.email}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2"><CardDescription>Phone</CardDescription></CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Phone className="size-4 text-muted-foreground" />
-                    <span>{customer.phone ?? "—"}</span>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2"><CardDescription>Status</CardDescription></CardHeader>
-                <CardContent>
-                  <Badge variant={customer.is_active ? "default" : "secondary"}>
-                    {customer.is_active ? "Active" : "Inactive"}
-                  </Badge>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2"><CardDescription>Active Agents</CardDescription></CardHeader>
-                <CardContent>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="size-4 text-green-500" />
-                    <span className="text-2xl font-bold">{activeAgents}</span>
-                    <span className="text-muted-foreground text-sm">/ {agents.length}</span>
-                  </div>
-                </CardContent>
-              </Card>
+              {[
+                { label: "Email", icon: <Mail className="size-4 text-muted-foreground" />, value: customer.email },
+                { label: "Phone", icon: <Phone className="size-4 text-muted-foreground" />, value: customer.phone ?? "—" },
+                { label: "Status", icon: null, value: <Badge variant={customer.is_active ? "default" : "secondary"}>{customer.is_active ? "Active" : "Inactive"}</Badge> },
+                { label: "Active Agents", icon: <CheckCircle2 className="size-4 text-green-500" />, value: <span className="text-2xl font-bold">{activeAgents}<span className="text-muted-foreground text-sm font-normal"> / {agents.length}</span></span> },
+              ].map(({ label, icon, value }) => (
+                <Card key={label}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardDescription>{label}</CardDescription>
+                      {icon}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="text-sm">{value}</CardContent>
+                </Card>
+              ))}
             </div>
 
             {/* Agents */}
             <div>
               <h2 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                <Bot className="size-5" />Deployed Agents
-                <Badge variant="secondary">{agents.length}</Badge>
+                <Bot className="size-5" />Deployed Agents <Badge variant="secondary">{agents.length}</Badge>
               </h2>
               {agents.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 border rounded-xl">
                   <Bot className="size-10 text-muted-foreground mb-3" />
                   <p className="font-medium">No agents deployed yet</p>
-                  <p className="text-sm text-muted-foreground mt-1">Go back to Admin and deploy an agent from a template.</p>
                 </div>
               ) : (
                 <div className="rounded-xl border overflow-hidden">
                   <table className="w-full text-sm">
                     <thead className="bg-muted/50">
                       <tr>
-                        {["Agent Name", "Channel", "Type", "Status", "Deployed By", "Actions"].map(h => (
+                        {["Agent", "Channel", "Type", "Status", "Actions"].map(h => (
                           <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
                         ))}
                       </tr>
@@ -221,27 +357,24 @@ export default function ClientDetailPage() {
                           </td>
                           <td className="px-4 py-3">
                             {a.channel ? (
-                              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${CHANNEL_COLORS[a.channel] ?? "bg-gray-100 text-gray-700"}`}>
-                                {a.channel}
-                              </span>
+                              <span className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${CHANNEL_COLORS[a.channel] ?? ""}`}>{a.channel}</span>
                             ) : "—"}
                           </td>
-                          <td className="px-4 py-3 text-muted-foreground text-xs">{CATEGORY_LABELS[a.agent_type] ?? a.agent_type}</td>
+                          <td className="px-4 py-3 text-xs text-muted-foreground">{CATEGORY_LABELS[a.agent_type] ?? a.agent_type}</td>
                           <td className="px-4 py-3">
-                            <div className="flex items-center gap-1.5">
-                              {STATUS_ICONS[a.status]}
-                              <span className="capitalize">{a.status}</span>
-                            </div>
+                            <Badge variant={a.status === "active" ? "default" : "secondary"} className="capitalize">{a.status}</Badge>
                           </td>
-                          <td className="px-4 py-3 text-xs text-muted-foreground">{a.deployed_by ?? "—"}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
-                              <Button variant="ghost" size="icon" className="size-8"
-                                title={a.status === "active" ? "Pause" : "Activate"}
-                                onClick={() => toggleStatus(a)}>
+                              <Button variant="outline" size="sm" className="h-7 text-xs"
+                                onClick={() => setRunAgent(a)}>
+                                <Rocket className="size-3 mr-1" />Run
+                              </Button>
+                              <Button variant="ghost" size="icon" className="size-7"
+                                onClick={() => toggleStatus(a)} title={a.status === "active" ? "Pause" : "Activate"}>
                                 {a.status === "active" ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
                               </Button>
-                              <Button variant="ghost" size="icon" className="size-8 text-destructive hover:text-destructive"
+                              <Button variant="ghost" size="icon" className="size-7 text-destructive"
                                 onClick={() => deleteAgent(a.id)}>
                                 <Trash2 className="size-3.5" />
                               </Button>
@@ -255,17 +388,44 @@ export default function ClientDetailPage() {
               )}
             </div>
 
+            {/* Execution Log */}
+            <div>
+              <h2 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                <TerminalSquare className="size-5" />Execution Log <Badge variant="secondary">{executions.length}</Badge>
+              </h2>
+              {executions.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-10 border rounded-xl">
+                  <TerminalSquare className="size-10 text-muted-foreground mb-3" />
+                  <p className="font-medium">No runs yet</p>
+                  <p className="text-sm text-muted-foreground mt-1">Click "Run" on an agent above to test it.</p>
+                </div>
+              ) : (
+                <div className="rounded-xl border overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        {["Status", "Contact", "Channel", "Trigger", "Time", ""].map(h => (
+                          <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {executions.map(exec => <ExecutionRow key={exec.id} exec={exec} />)}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
             {/* Integrations */}
             <div>
               <h2 className="font-semibold text-lg mb-3 flex items-center gap-2">
-                <Link2 className="size-5" />Integrations
-                <Badge variant="secondary">{integrations.length}</Badge>
+                <Link2 className="size-5" />Integrations <Badge variant="secondary">{integrations.length}</Badge>
               </h2>
               {integrations.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-12 border rounded-xl">
+                <div className="flex flex-col items-center justify-center py-10 border rounded-xl">
                   <Zap className="size-10 text-muted-foreground mb-3" />
                   <p className="font-medium">No integrations connected</p>
-                  <p className="text-sm text-muted-foreground mt-1">Client hasn't connected any tools yet.</p>
                 </div>
               ) : (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -280,9 +440,7 @@ export default function ClientDetailPage() {
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-xs text-muted-foreground">
-                          Connected {new Date(i.created_at).toLocaleDateString()}
-                        </p>
+                        <p className="text-xs text-muted-foreground">Connected {new Date(i.created_at).toLocaleDateString()}</p>
                       </CardContent>
                     </Card>
                   ))}
@@ -292,6 +450,16 @@ export default function ClientDetailPage() {
           </>
         )}
       </div>
+
+      {/* Run Agent Modal */}
+      {runAgent && customer && (
+        <RunAgentDialog
+          agent={runAgent}
+          customer={customer}
+          onClose={() => setRunAgent(null)}
+          onRan={() => { setRunAgent(null); load() }}
+        />
+      )}
     </BaseLayout>
   )
 }
