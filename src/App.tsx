@@ -1,5 +1,6 @@
 import { BrowserRouter as Router } from 'react-router-dom'
 import { Component, type ReactNode } from 'react'
+import { CopilotKit } from '@copilotkit/react-core'
 import { ThemeProvider } from '@/components/theme-provider'
 import { SidebarConfigProvider } from '@/contexts/sidebar-context'
 import { AppRouter } from '@/components/router/app-router'
@@ -24,6 +25,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 }
 
 const basename = import.meta.env.VITE_BASENAME || ''
+const API_BASE = import.meta.env.VITE_API_URL ?? ''
 
 function App() {
   return (
@@ -31,11 +33,13 @@ function App() {
       <div className="font-sans antialiased" style={{ fontFamily: 'var(--font-inter)' }}>
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
           <AuthProvider>
-            <SidebarConfigProvider>
-              <Router basename={basename}>
-                <AppRouter />
-              </Router>
-            </SidebarConfigProvider>
+            <CopilotKit runtimeUrl={`${API_BASE}/copilotkit`}>
+              <SidebarConfigProvider>
+                <Router basename={basename}>
+                  <AppRouter />
+                </Router>
+              </SidebarConfigProvider>
+            </CopilotKit>
           </AuthProvider>
         </ThemeProvider>
       </div>

@@ -1,6 +1,8 @@
 "use client"
 
 import * as React from "react"
+import { CopilotSidebar } from "@copilotkit/react-ui"
+import "@copilotkit/react-ui/styles.css"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SiteFooter } from "@/components/site-footer"
@@ -100,6 +102,15 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
         onOpenChange={setThemeCustomizerOpen}
       />
       <UpgradeToProButton />
+
+      {/* AI Assistant Sidebar */}
+      <CopilotSidebar
+        defaultOpen={false}
+        labels={{
+          title: "AI Assistant",
+          initial: "Hi! I'm your SD AI Solutions assistant. I can help you generate outreach messages, review agent performance, or answer questions about your campaigns.",
+        }}
+      />
 
     </SidebarProvider>
   )
