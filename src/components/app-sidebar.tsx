@@ -3,7 +3,7 @@
 import * as React from "react"
 import {
   LayoutDashboard, Users, Settings,
-  CreditCard, BarChart3, ListChecks, Inbox,
+  CreditCard, BarChart3, ListChecks, Inbox, MessageSquarePlus,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -27,6 +27,7 @@ const navGroups = [
       { title: "Sequences",  url: "/enrollments", icon: ListChecks },
       { title: "Inbox",      url: "/inbox",        icon: Inbox },
       { title: "Contacts",   url: "/contacts",     icon: Users },
+      { title: "Requests",   url: "/requests",     icon: MessageSquarePlus },
     ],
   },
   {

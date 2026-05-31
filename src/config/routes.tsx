@@ -16,6 +16,7 @@ const Dashboard = lazy(() => import('@/app/dashboard/page'))
 const Analytics = lazy(() => import('@/app/analytics/page'))
 const Enrollments = lazy(() => import('@/app/enrollments/page'))
 const RepliesInbox = lazy(() => import('@/app/replies-inbox/page'))
+const Requests = lazy(() => import('@/app/requests/page'))
 const Users = lazy(() => import('@/app/users/page'))
 
 // Auth pages
@@ -113,6 +114,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/inbox",
     element: <ProtectedRoute><RepliesInbox /></ProtectedRoute>
+  },
+  {
+    path: "/requests",
+    element: <ProtectedRoute><Requests /></ProtectedRoute>
   },
   {
     path: "/contacts",
