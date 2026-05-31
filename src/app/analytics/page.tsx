@@ -7,7 +7,7 @@ import {
 } from "recharts"
 import {
   TrendingUp, TrendingDown, Send, MessageCircle, DollarSign,
-  Bot, CheckCircle, RefreshCcw, BarChart3,
+  Bot, CheckCircle, RefreshCcw, BarChart3, Download,
 } from "lucide-react"
 import { BaseLayout } from "@/components/layouts/base-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -49,6 +49,45 @@ export default function AnalyticsPage() {
     setGoal(v); localStorage.setItem("sdai_roi_goal", String(v)); setEditingGoal(false)
   }
 
+  function downloadReport() {
+    if (!summary) return
+    const today = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+    const rows = (summary.agents ?? []).map(a => `
+      <tr><td>${a.agent_name}</td><td>${TYPE_LABELS[a.agent_type] ?? a.agent_type}</td>
+      <td style="text-align:right">${a.messages_sent.toLocaleString()}</td>
+      <td style="text-align:right">${a.delivery_rate.toFixed(0)}%</td>
+      <td style="text-align:right">${a.response_rate.toFixed(0)}%</td></tr>`).join("")
+    const html = `<!doctype html><html><head><meta charset="utf-8"><title>SD AI Solutions — Performance Report</title>
+      <style>
+        body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#0b0f14;max-width:760px;margin:40px auto;padding:0 24px}
+        h1{font-size:22px;margin:0} .sub{color:#64748b;font-size:13px;margin-top:4px}
+        .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:28px 0}
+        .kpi{border:1px solid #e2e8f0;border-radius:10px;padding:14px}
+        .kpi .v{font-size:22px;font-weight:700} .kpi .l{font-size:11px;color:#64748b;margin-top:2px}
+        table{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}
+        th,td{padding:8px 10px;border-bottom:1px solid #e2e8f0;text-align:left}
+        th{color:#64748b;font-weight:600;font-size:11px;text-transform:uppercase}
+        .foot{margin-top:32px;color:#94a3b8;font-size:11px;border-top:1px solid #e2e8f0;padding-top:12px}
+      </style></head><body>
+      <h1>Performance Report</h1>
+      <div class="sub">SD AI Solutions · Last ${period} days · Generated ${today}</div>
+      <div class="kpis">
+        <div class="kpi"><div class="v">${(summary.messages_sent ?? 0).toLocaleString()}</div><div class="l">Messages Sent</div></div>
+        <div class="kpi"><div class="v">${avgDelivery.toFixed(0)}%</div><div class="l">Delivery Rate</div></div>
+        <div class="kpi"><div class="v">${avgResponse.toFixed(0)}%</div><div class="l">Response Rate</div></div>
+        <div class="kpi"><div class="v">$${(summary.estimated_roi_usd ?? 0).toLocaleString()}</div><div class="l">Estimated ROI</div></div>
+      </div>
+      ${goal > 0 ? `<p style="font-size:13px"><strong>Monthly ROI goal:</strong> $${(summary.estimated_roi_usd ?? 0).toLocaleString()} of $${goal.toLocaleString()} (${Math.min(100, Math.round(((summary.estimated_roi_usd ?? 0) / goal) * 100))}%)</p>` : ""}
+      <h3 style="font-size:14px;margin-top:24px">Agent Performance</h3>
+      <table><thead><tr><th>Agent</th><th>Type</th><th style="text-align:right">Sent</th><th style="text-align:right">Delivered</th><th style="text-align:right">Replies</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5" style="color:#94a3b8">No agents deployed yet</td></tr>`}</tbody></table>
+      <div class="foot">SD AI Solutions · sandiegoaisolutions.com · This report was generated automatically from your live agent data.</div>
+      <script>window.onload=function(){window.print()}</script>
+      </body></html>`
+    const w = window.open("", "_blank")
+    if (w) { w.document.write(html); w.document.close() }
+  }
+
   useEffect(() => {
     setLoading(true)
     Promise.all([
@@ -88,17 +127,22 @@ export default function AnalyticsPage() {
             <BarChart3 className="size-4 text-primary" />
             <span>All agents · Last {period} days</span>
           </div>
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-36">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">Last 7 days</SelectItem>
-              <SelectItem value="14">Last 14 days</SelectItem>
-              <SelectItem value="30">Last 30 days</SelectItem>
-              <SelectItem value="90">Last 90 days</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="gap-1.5" disabled={loading || !summary} onClick={downloadReport}>
+              <Download className="size-3.5" />Download Report
+            </Button>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">Last 7 days</SelectItem>
+                <SelectItem value="14">Last 14 days</SelectItem>
+                <SelectItem value="30">Last 30 days</SelectItem>
+                <SelectItem value="90">Last 90 days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* KPI row */}
