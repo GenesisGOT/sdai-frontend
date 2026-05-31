@@ -13,7 +13,10 @@ import {
   SidebarMenu, SidebarMenuButton, SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-const navGroups = [
+const API_BASE = import.meta.env.VITE_API_URL ?? ""
+const INBOX_SEEN_KEY = "sdai_inbox_seen"
+
+const buildNavGroups = (inboxBadge: number) => [
   {
     label: "Overview",
     items: [
@@ -25,7 +28,7 @@ const navGroups = [
     label: "My Agents",
     items: [
       { title: "Sequences",  url: "/enrollments", icon: ListChecks },
-      { title: "Inbox",      url: "/inbox",        icon: Inbox },
+      { title: "Inbox",      url: "/inbox",        icon: Inbox, badge: inboxBadge },
       { title: "Contacts",   url: "/contacts",     icon: Users },
       { title: "Requests",   url: "/requests",     icon: MessageSquarePlus },
     ],
@@ -48,6 +51,29 @@ const navGroups = [
 ]
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [inboxBadge, setInboxBadge] = React.useState(0)
+
+  React.useEffect(() => {
+    const token = localStorage.getItem("sdai_token")
+    if (!token) return
+    fetch(`${API_BASE}/api/v1/dashboard/summary?period_days=30`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(r => (r.ok ? r.json() : null))
+      .then(data => {
+        if (!data?.recent_interactions) return
+        const seen = Number(localStorage.getItem(INBOX_SEEN_KEY) ?? 0)
+        const unread = data.recent_interactions.filter(
+          (i: { direction: string; created_at: string }) =>
+            i.direction === "inbound" && new Date(i.created_at).getTime() > seen,
+        ).length
+        setInboxBadge(unread)
+      })
+      .catch(() => {})
+  }, [])
+
+  const navGroups = buildNavGroups(inboxBadge)
+
   return (
     <Sidebar {...props}>
       <SidebarHeader>

@@ -54,6 +54,9 @@ export default function RepliesInboxPage() {
 
   useEffect(() => { load() }, [load])
 
+  // Mark inbox as seen so the sidebar "new replies" badge clears
+  useEffect(() => { localStorage.setItem("sdai_inbox_seen", String(Date.now())) }, [])
+
   const filtered = interactions.filter(i => {
     const matchSearch = i.content_preview.toLowerCase().includes(search.toLowerCase())
     const matchChannel = channelFilter === "all" || i.channel === channelFilter
