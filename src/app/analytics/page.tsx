@@ -14,6 +14,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ""
 const auth = () => ({ Authorization: `Bearer ${localStorage.getItem("sdai_token")}` })
@@ -39,6 +40,14 @@ export default function AnalyticsPage() {
   const [roi, setRoi] = useState<RoiItem[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [goal, setGoal] = useState<number>(() => Number(localStorage.getItem("sdai_roi_goal")) || 0)
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [goalInput, setGoalInput] = useState("")
+
+  function saveGoal() {
+    const v = Math.max(0, Math.round(Number(goalInput) || 0))
+    setGoal(v); localStorage.setItem("sdai_roi_goal", String(v)); setEditingGoal(false)
+  }
 
   useEffect(() => {
     setLoading(true)
@@ -121,6 +130,62 @@ export default function AnalyticsPage() {
             ))}
           </div>
         )}
+
+        {/* ROI goal tracker */}
+        {!loading && (() => {
+          const current = summary?.estimated_roi_usd ?? 0
+          const pct = goal > 0 ? Math.min(100, Math.round((current / goal) * 100)) : 0
+          return (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
+                <div>
+                  <CardTitle className="text-base flex items-center gap-2"><DollarSign className="size-4" />Monthly ROI Goal</CardTitle>
+                  <CardDescription>Track recovered revenue against your target</CardDescription>
+                </div>
+                {!editingGoal ? (
+                  <Button variant="outline" size="sm" onClick={() => { setGoalInput(String(goal || "")); setEditingGoal(true) }}>
+                    {goal > 0 ? "Edit goal" : "Set goal"}
+                  </Button>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">$</span>
+                    <input
+                      type="number" autoFocus value={goalInput}
+                      onChange={e => setGoalInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === "Enter") saveGoal() }}
+                      placeholder="5000"
+                      className="w-28 rounded-md border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                    <Button size="sm" onClick={saveGoal}>Save</Button>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                {goal > 0 ? (
+                  <div className="space-y-2">
+                    <div className="flex items-end justify-between">
+                      <span className="text-2xl font-bold tabular-nums">${current.toLocaleString()}</span>
+                      <span className="text-sm text-muted-foreground">of ${goal.toLocaleString()} · {pct}%</span>
+                    </div>
+                    <div className="h-3 w-full overflow-hidden rounded-full bg-muted">
+                      <div
+                        className={`h-full rounded-full transition-all ${pct >= 100 ? "bg-green-500" : "bg-primary"}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {pct >= 100
+                        ? "🎉 Goal reached! Your agents recovered more than your target this period."
+                        : `$${Math.max(0, goal - current).toLocaleString()} to go this period.`}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">Set a monthly revenue-recovered goal to track your agents' progress against it.</p>
+                )}
+              </CardContent>
+            </Card>
+          )
+        })()}
 
         {/* Message volume timeseries */}
         <Card>
