@@ -28,7 +28,7 @@ interface BillingStatus {
 const PLANS = [
   {
     id: "starter",
-    name: "Starter",
+    name: "Pilot",
     price: 99,
     icon: <Zap className="size-5 text-blue-500" />,
     description: "Perfect for getting started",
@@ -48,7 +48,7 @@ const PLANS = [
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Enterprise",
     price: 599,
     icon: <Infinity className="size-5 text-green-500" />,
     description: "No limits",
