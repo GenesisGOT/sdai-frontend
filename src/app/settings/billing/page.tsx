@@ -72,6 +72,7 @@ export default function BillingSettings() {
   const [loading, setLoading] = useState(true)
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const [portalLoading, setPortalLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const success = searchParams.get("success")
   const canceled = searchParams.get("canceled")
@@ -85,16 +86,28 @@ export default function BillingSettings() {
 
   async function handleSubscribe(planId: string) {
     setCheckoutLoading(planId)
+    setError(null)
     try {
       const r = await fetch(`${API_BASE}/api/v1/billing/checkout`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ plan: planId }),
       })
-      const data = await r.json()
-      if (data.url) window.location.href = data.url
-    } catch { /* noop */ }
-    finally { setCheckoutLoading(null) }
+      const data = await r.json().catch(() => ({}))
+      if (r.ok && data.url) {
+        window.location.href = data.url
+        return
+      }
+      if (r.status === 401) {
+        setError("Your session expired. Please log out and back in, then try again.")
+      } else {
+        setError(data.detail || `Checkout failed (HTTP ${r.status}). Please contact support.`)
+      }
+    } catch {
+      setError("Couldn't reach the billing service. Check your connection and try again.")
+    } finally {
+      setCheckoutLoading(null)
+    }
   }
 
   async function handlePortal() {
@@ -131,6 +144,12 @@ export default function BillingSettings() {
           <div className="flex items-center gap-3 rounded-xl border border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20 dark:border-yellow-700 px-4 py-3">
             <AlertCircle className="size-5 text-yellow-600 shrink-0" />
             <p className="text-sm text-yellow-800 dark:text-yellow-200">Checkout canceled. You haven't been charged.</p>
+          </div>
+        )}
+        {error && (
+          <div className="flex items-center gap-3 rounded-xl border border-red-300 bg-red-50 dark:bg-red-900/20 dark:border-red-700 px-4 py-3">
+            <AlertCircle className="size-5 text-red-600 shrink-0" />
+            <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
           </div>
         )}
 
