@@ -299,7 +299,7 @@ export default function DashboardPage() {
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-2">
                 <MessageSquare className="size-4" />Recent Activity
               </h2>
-              <Link to="/mail">
+              <Link to="/inbox">
                 <Button variant="ghost" size="sm" className="h-7 text-xs">
                   View all <ArrowRight className="size-3 ml-1" />
                 </Button>
@@ -343,7 +343,7 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <div className="grid gap-3 sm:grid-cols-3">
           {[
-            { label: "View Messages", desc: "Full inbox & conversation threads", href: "/mail", icon: MessageSquare },
+            { label: "View Messages", desc: "Full inbox & conversation threads", href: "/inbox", icon: MessageSquare },
             { label: "My Contacts", desc: "Manage your contact list", href: "/users", icon: CheckCircle },
             { label: "Billing", desc: "Plans, usage & invoices", href: "/settings/billing", icon: DollarSign },
           ].map(({ label, desc, href, icon: Icon }) => (
