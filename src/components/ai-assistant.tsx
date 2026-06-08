@@ -53,7 +53,7 @@ function AssistantInner() {
   // Click on a suggested-action chip.
   async function onChip(action: CopilotAction) {
     setMessages(m => [...m, { role: "user", content: action.chipLabel! }])
-    await executeAction(action, `Opening **${action.chipLabel}** for you.`)
+    await executeAction(action, `Opening ${action.chipLabel} for you…`)
   }
 
   // Strip + run any action directive the assistant streamed back.
@@ -76,7 +76,7 @@ function AssistantInner() {
     // 1) Try to satisfy the request locally as a direct action (navigation, etc.)
     const intent = matchIntent(text)
     if (intent) {
-      await executeAction(intent, `On it — opening **${intent.chipLabel ?? intent.name.replace(/_/g, " ")}**.`)
+      await executeAction(intent, `On it — opening ${intent.chipLabel ?? intent.name.replace(/_/g, " ")}…`)
       return
     }
 
