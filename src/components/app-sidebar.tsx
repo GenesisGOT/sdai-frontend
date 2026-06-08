@@ -3,7 +3,7 @@
 import * as React from "react"
 import {
   LayoutDashboard, Users, Settings,
-  CreditCard, BarChart3, ListChecks, Inbox, MessageSquarePlus,
+  CreditCard, BarChart3, ListChecks, Inbox, MessageSquarePlus, Workflow,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { NavMain } from "@/components/nav-main"
@@ -28,6 +28,7 @@ const buildNavGroups = (inboxBadge: number) => [
     label: "My Agents",
     items: [
       { title: "Sequences",  url: "/enrollments", icon: ListChecks },
+      { title: "Agent Flow", url: "/agent-flow",  icon: Workflow },
       { title: "Inbox",      url: "/inbox",        icon: Inbox, badge: inboxBadge },
       { title: "Contacts",   url: "/contacts",     icon: Users },
       { title: "Requests",   url: "/requests",     icon: MessageSquarePlus },

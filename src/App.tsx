@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { SidebarConfigProvider } from '@/contexts/sidebar-context'
 import { AppRouter } from '@/components/router/app-router'
 import { AuthProvider } from '@/context/AuthContext'
+import { CopilotActionsProvider } from '@/context/copilot-actions'
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null }
@@ -31,11 +32,13 @@ function App() {
       <div className="font-sans antialiased" style={{ fontFamily: 'var(--font-inter)' }}>
         <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
           <AuthProvider>
-            <SidebarConfigProvider>
-              <Router basename={basename}>
-                <AppRouter />
-              </Router>
-            </SidebarConfigProvider>
+            <CopilotActionsProvider>
+              <SidebarConfigProvider>
+                <Router basename={basename}>
+                  <AppRouter />
+                </Router>
+              </SidebarConfigProvider>
+            </CopilotActionsProvider>
           </AuthProvider>
         </ThemeProvider>
       </div>

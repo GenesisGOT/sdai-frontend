@@ -7,6 +7,7 @@ import { SiteFooter } from "@/components/site-footer"
 import { ThemeCustomizer, ThemeCustomizerTrigger } from "@/components/theme-customizer"
 import { UpgradeToProButton } from "@/components/upgrade-to-pro-button"
 import { AIAssistant } from "@/components/ai-assistant"
+import { CopilotGlobalActions } from "@/components/copilot-global-actions"
 import { useSidebarConfig } from "@/hooks/use-sidebar-config"
 import {
   SidebarInset,
@@ -101,6 +102,9 @@ export function BaseLayout({ children, title, description }: BaseLayoutProps) {
         onOpenChange={setThemeCustomizerOpen}
       />
       <UpgradeToProButton />
+
+      {/* Registers app-wide copilot actions (navigation + shortcuts) */}
+      <CopilotGlobalActions />
 
       {/* AI Assistant — isolated, can never crash the portal */}
       <AIAssistant />

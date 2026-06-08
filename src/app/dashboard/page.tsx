@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useCopilotReadable } from "@/context/copilot-actions"
+import { FadeIn, Stagger, HoverScale } from "@/components/motion/motion-primitives"
 
 const API_BASE = import.meta.env.VITE_API_URL ?? ""
 
@@ -124,6 +126,24 @@ export default function DashboardPage() {
   const sparkline = buildSparkline(data.messages_sent, parseInt(period))
   const inboundReplies = data.recent_interactions.filter(i => i.direction === "inbound")
 
+  // Expose live dashboard numbers to the AI assistant.
+  useCopilotReadable({
+    description: "Current client dashboard summary (selected period)",
+    value: {
+      period_days: data.period_days,
+      messages_sent: data.messages_sent,
+      messages_delivered: data.messages_delivered,
+      delivery_rate: data.delivery_rate,
+      response_rate: data.response_rate,
+      responses_received: data.responses_received,
+      estimated_roi_usd: data.estimated_roi_usd,
+      agents: data.agents.map(a => ({
+        name: a.agent_name, type: a.agent_type,
+        messages_sent: a.messages_sent, response_rate: a.response_rate,
+      })),
+    },
+  })
+
   return (
     <BaseLayout
       title="My Dashboard"
@@ -157,30 +177,38 @@ export default function DashboardPage() {
             {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-32 rounded-xl" />)}
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard
-              title="Messages Sent" value={data.messages_sent.toLocaleString()}
-              sub={`${data.period_days}d`} trend="up" icon={Send}
-              footer={`${data.messages_delivered.toLocaleString()} delivered`}
-            />
-            <StatCard
-              title="Delivery Rate" value={`${data.delivery_rate.toFixed(1)}%`}
-              sub={data.delivery_rate >= 90 ? "on track" : "needs attention"}
-              trend={data.delivery_rate >= 90 ? "up" : "down"} icon={CheckCircle}
-              footer={`Industry avg: ~92%`}
-            />
-            <StatCard
-              title="Response Rate" value={`${data.response_rate.toFixed(1)}%`}
-              sub={`${data.responses_received} replies`}
-              trend={data.response_rate >= 20 ? "up" : "neutral"} icon={MessageCircle}
-              footer={`${inboundReplies.length} inbound this period`}
-            />
-            <StatCard
-              title="Estimated ROI" value={`$${data.estimated_roi_usd.toLocaleString()}`}
-              sub="recovered value" trend="up" icon={DollarSign}
-              footer="Based on re-engagement rate"
-            />
-          </div>
+          <Stagger className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <FadeIn asItem>
+              <StatCard
+                title="Messages Sent" value={data.messages_sent.toLocaleString()}
+                sub={`${data.period_days}d`} trend="up" icon={Send}
+                footer={`${data.messages_delivered.toLocaleString()} delivered`}
+              />
+            </FadeIn>
+            <FadeIn asItem>
+              <StatCard
+                title="Delivery Rate" value={`${data.delivery_rate.toFixed(1)}%`}
+                sub={data.delivery_rate >= 90 ? "on track" : "needs attention"}
+                trend={data.delivery_rate >= 90 ? "up" : "down"} icon={CheckCircle}
+                footer={`Industry avg: ~92%`}
+              />
+            </FadeIn>
+            <FadeIn asItem>
+              <StatCard
+                title="Response Rate" value={`${data.response_rate.toFixed(1)}%`}
+                sub={`${data.responses_received} replies`}
+                trend={data.response_rate >= 20 ? "up" : "neutral"} icon={MessageCircle}
+                footer={`${inboundReplies.length} inbound this period`}
+              />
+            </FadeIn>
+            <FadeIn asItem>
+              <StatCard
+                title="Estimated ROI" value={`$${data.estimated_roi_usd.toLocaleString()}`}
+                sub="recovered value" trend="up" icon={DollarSign}
+                footer="Based on re-engagement rate"
+              />
+            </FadeIn>
+          </Stagger>
         )}
 
         {/* Sparkline chart */}
@@ -319,22 +347,24 @@ export default function DashboardPage() {
             { label: "My Contacts", desc: "Manage your contact list", href: "/users", icon: CheckCircle },
             { label: "Billing", desc: "Plans, usage & invoices", href: "/settings/billing", icon: DollarSign },
           ].map(({ label, desc, href, icon: Icon }) => (
-            <Link key={label} to={href}>
-              <Card className="hover:bg-muted/30 transition-colors cursor-pointer h-full">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon className="size-4 text-primary" />
-                    <CardTitle className="text-sm">{label}</CardTitle>
-                  </div>
-                  <CardDescription className="text-xs">{desc}</CardDescription>
-                </CardHeader>
-                <CardFooter>
-                  <span className="text-xs text-primary flex items-center gap-1">
-                    Open <ArrowRight className="size-3" />
-                  </span>
-                </CardFooter>
-              </Card>
-            </Link>
+            <HoverScale key={label} scale={1.02}>
+              <Link to={href}>
+                <Card className="hover:bg-muted/30 transition-colors cursor-pointer h-full">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <Icon className="size-4 text-primary" />
+                      <CardTitle className="text-sm">{label}</CardTitle>
+                    </div>
+                    <CardDescription className="text-xs">{desc}</CardDescription>
+                  </CardHeader>
+                  <CardFooter>
+                    <span className="text-xs text-primary flex items-center gap-1">
+                      Open <ArrowRight className="size-3" />
+                    </span>
+                  </CardFooter>
+                </Card>
+              </Link>
+            </HoverScale>
           ))}
         </div>
 

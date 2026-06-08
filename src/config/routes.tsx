@@ -15,6 +15,7 @@ const Onboarding = lazy(() => import('@/app/onboarding/page'))
 const Dashboard = lazy(() => import('@/app/dashboard/page'))
 const Analytics = lazy(() => import('@/app/analytics/page'))
 const Enrollments = lazy(() => import('@/app/enrollments/page'))
+const AgentFlow = lazy(() => import('@/app/agent-flow/page'))
 const RepliesInbox = lazy(() => import('@/app/replies-inbox/page'))
 const Requests = lazy(() => import('@/app/requests/page'))
 const Users = lazy(() => import('@/app/users/page'))
@@ -110,6 +111,10 @@ export const routes: RouteConfig[] = [
   {
     path: "/enrollments",
     element: <ProtectedRoute><Enrollments /></ProtectedRoute>
+  },
+  {
+    path: "/agent-flow",
+    element: <ProtectedRoute><AgentFlow /></ProtectedRoute>
   },
   {
     path: "/inbox",
